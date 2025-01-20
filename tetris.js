@@ -159,7 +159,7 @@ class Tetris {
                     this.ctx.fillRect(x * this.blockSize, y * this.blockSize, this.blockSize, this.blockSize);
                 }
                 // Draw grid borders
-                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.074)';
                 this.ctx.strokeRect(x * this.blockSize, y * this.blockSize, this.blockSize, this.blockSize);
             }
         }
@@ -173,7 +173,7 @@ class Tetris {
             });
         });
         
-        if (!this.gameOver) {
+        if (!this.gameOver && !this.paused) {
             // Draw current piece
             this.currentPiece.shape.forEach((row, y) => {
                 row.forEach((value, x) => {
@@ -196,6 +196,17 @@ class Tetris {
         
         // Draw next piece
         this.drawPieceInCanvas(this.nextCtx, this.nextPiece, this.nextCanvas);
+
+        // Draw pause screen
+        if (this.paused) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 24px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('PAUSED', this.canvas.width / 2, this.canvas.height / 2);
+        }
 
         // Draw game over screen
         if (this.gameOver) {
@@ -357,10 +368,18 @@ class Tetris {
     
     togglePause() {
         this.paused = !this.paused;
-        if (!this.paused) {
+        const pauseButton = document.getElementById('pauseButton');
+        const pauseIcon = pauseButton.querySelector('.pause-icon');
+        
+        if (this.paused) {
+            pauseIcon.textContent = '▶';
+        } else {
+            pauseIcon.textContent = '⏸';
             this.lastTime = performance.now();
             this.gameLoop();
         }
+        
+        this.draw();
     }
     
     resetGame() {
