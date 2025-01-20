@@ -25,6 +25,7 @@ class Tetris {
         this.level = 1;
         this.gameOver = false;
         this.paused = false;
+        this.highScore = localStorage.getItem('tetrisHighScore') || 0;
         
         // Tetromino colors
         this.colors = {
@@ -122,8 +123,15 @@ class Tetris {
             }
         }
         if (linesCleared > 0) {
+            // Standard Tetris scoring system
+            const points = {
+                1: 100,
+                2: 300,
+                3: 500,
+                4: 800
+            };
             this.lines += linesCleared;
-            this.score += linesCleared * 100 * this.level;
+            this.score += (points[linesCleared] || points[1]) * this.level;
             this.level = Math.floor(this.lines / 10) + 1;
             this.dropInterval = Math.max(100, 1000 - (this.level - 1) * 50);
             this.updateScore();
@@ -131,6 +139,13 @@ class Tetris {
     }
     
     updateScore() {
+        if (this.score > this.highScore) {
+            this.highScore = this.score;
+            localStorage.setItem('tetrisHighScore', this.score);
+            document.querySelector('.score-label').textContent = 'NEW BEST!';
+        } else {
+            document.querySelector('.score-label').textContent = 'SCORE';
+        }
         document.querySelector('.score').textContent = this.score.toLocaleString();
         document.querySelector('.lines').textContent = `Lines ${this.lines}`;
         document.querySelector('.level').textContent = `Level ${this.level}`;
@@ -151,19 +166,21 @@ class Tetris {
             });
         });
         
-        // Draw current piece
-        this.currentPiece.shape.forEach((row, y) => {
-            row.forEach((value, x) => {
-                if (value) {
-                    this.drawBlock(
-                        this.ctx,
-                        this.currentPiece.x + x,
-                        this.currentPiece.y + y,
-                        this.currentPiece.color
-                    );
-                }
+        if (!this.gameOver) {
+            // Draw current piece
+            this.currentPiece.shape.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value) {
+                        this.drawBlock(
+                            this.ctx,
+                            this.currentPiece.x + x,
+                            this.currentPiece.y + y,
+                            this.currentPiece.color
+                        );
+                    }
+                });
             });
-        });
+        }
         
         // Draw hold piece
         if (this.holdPiece) {
@@ -172,6 +189,23 @@ class Tetris {
         
         // Draw next piece
         this.drawPieceInCanvas(this.nextCtx, this.nextPiece, this.nextCanvas);
+
+        // Draw game over screen
+        if (this.gameOver) {
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            this.ctx.fillStyle = '#fff';
+            this.ctx.font = 'bold 24px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('GAME OVER', this.canvas.width / 2, this.canvas.height / 2 - 30);
+            
+            this.ctx.font = '16px Arial';
+            this.ctx.fillText('Press SPACE to restart', this.canvas.width / 2, this.canvas.height / 2 + 10);
+            
+            this.ctx.font = '14px Arial';
+            this.ctx.fillText(`Final Score: ${this.score.toLocaleString()}`, this.canvas.width / 2, this.canvas.height / 2 + 40);
+        }
     }
     
     drawBlock(ctx, x, y, color) {
@@ -204,7 +238,13 @@ class Tetris {
     }
     
     handleKeyPress(event) {
-        if (this.gameOver || this.paused) return;
+        if (this.gameOver) {
+            if (event.key === ' ') {
+                this.resetGame();
+            }
+            return;
+        }
+        if (this.paused) return;
         
         switch(event.key) {
             case 'ArrowLeft':
@@ -220,8 +260,6 @@ class Tetris {
             case 'ArrowDown':
                 if (this.isValidMove(this.currentPiece, 0, 1)) {
                     this.currentPiece.y++;
-                    this.score += 1;
-                    this.updateScore();
                 }
                 break;
             case 'ArrowUp':
@@ -233,7 +271,6 @@ class Tetris {
             case ' ':
                 while (this.isValidMove(this.currentPiece, 0, 1)) {
                     this.currentPiece.y++;
-                    this.score += 2;
                 }
                 this.updateScore();
                 this.merge();
@@ -286,8 +323,24 @@ class Tetris {
         }
     }
     
+    resetGame() {
+        this.grid = Array(this.rows).fill().map(() => Array(this.cols).fill(0));
+        this.score = 0;
+        this.lines = 0;
+        this.level = 1;
+        this.gameOver = false;
+        this.paused = false;
+        this.dropInterval = 1000;
+        this.currentPiece = this.generatePiece();
+        this.nextPiece = this.generatePiece();
+        this.holdPiece = null;
+        this.canHold = true;
+        this.updateScore();
+        this.gameLoop();
+    }
+    
     gameLoop(currentTime = 0) {
-        if (this.paused) return;
+        if (this.paused || this.gameOver) return;
         
         const deltaTime = currentTime - this.lastTime;
         this.lastTime = currentTime;
