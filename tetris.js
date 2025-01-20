@@ -379,6 +379,9 @@ class Tetris {
             this.gameLoop();
         }
         
+        // Unfocus the button
+        pauseButton.blur();
+        
         this.draw();
     }
     
