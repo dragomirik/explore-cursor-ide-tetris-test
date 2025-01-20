@@ -13,6 +13,7 @@
                 <div class="score">0</div>
                 <div class="lines">Lines: 0</div>
                 <div class="level">Level: 1</div>
+                <div class="time">Time: 00:00</div>
             </div>
         </div>
         <div class="game-area">
@@ -20,15 +21,27 @@
                 <div class="panel-label">Hold</div>
                 <canvas id="holdCanvas"></canvas>
             </div>
-            <canvas id="gameCanvas"></canvas>
-            <div class="next-piece">
-                <div class="panel-label">Next</div>
-                <canvas id="nextCanvas"></canvas>
+            <div class="game-main">
+                <canvas id="gameCanvas"></canvas>
+                <button id="pauseButton" class="pause-button">
+                    <span class="pause-icon">⏸</span>
+                </button>
+            </div>
+            <div class="side-panel">
+                <div class="next-piece">
+                    <div class="panel-label">Next</div>
+                    <canvas id="nextCanvas"></canvas>
+                </div>
+                <div class="scoreboard"></div>
             </div>
         </div>
-        <button id="pauseButton" class="pause-button">
-            <span class="pause-icon">⏸</span>
-        </button>
+    </div>
+    <div id="usernameModal" class="modal">
+        <div class="modal-content">
+            <h2>Enter Your Name</h2>
+            <input type="text" id="usernameInput" maxlength="15" placeholder="Player">
+            <button id="saveUsername">Start Game</button>
+        </div>
     </div>
     <script src="tetris.js"></script>
 </body>

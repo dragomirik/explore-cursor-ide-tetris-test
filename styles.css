@@ -54,6 +54,63 @@ body {
     align-items: flex-start;
 }
 
+.game-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.scoreboard {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 15px;
+    backdrop-filter: blur(5px);
+    min-width: 300px;
+}
+
+.scoreboard h3 {
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.scoreboard table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8em;
+    table-layout: fixed;
+}
+
+.scoreboard th, .scoreboard td {
+    padding: 4px;
+    text-align: left;
+    color: rgba(255, 255, 255, 0.7);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.scoreboard th {
+    font-weight: bold;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.scoreboard th:nth-child(1), .scoreboard td:nth-child(1) { width: 10%; } /* Rank */
+.scoreboard th:nth-child(2), .scoreboard td:nth-child(2) { width: 15%; } /* Player */
+.scoreboard th:nth-child(3), .scoreboard td:nth-child(3) { width: 20%; } /* Score */
+.scoreboard th:nth-child(4), .scoreboard td:nth-child(4) { width: 15%; } /* Time */
+.scoreboard th:nth-child(5), .scoreboard td:nth-child(5) { width: 40%; } /* Datetime */
+
 .hold-piece, .next-piece {
     background: rgba(255, 255, 255, 0.05);
     padding: 15px;
@@ -103,4 +160,63 @@ body {
     color: rgba(255, 255, 255, 0.8);
     font-size: 1.2em;
     line-height: 1;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.show {
+    display: flex;
+}
+
+.modal-content {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    text-align: center;
+}
+
+.modal h2 {
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.modal input {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    color: #fff;
+    margin-bottom: 15px;
+    width: 200px;
+    font-size: 16px;
+}
+
+.modal input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.modal button {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.modal button:hover {
+    background: rgba(255, 255, 255, 0.3);
 } 

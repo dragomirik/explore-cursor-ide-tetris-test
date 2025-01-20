@@ -1,5 +1,13 @@
 class Tetris {
     constructor() {
+        // Initialize IndexedDB
+        this.initDB();
+        
+        // Show username modal if no username is set
+        if (!localStorage.getItem('tetrisUsername')) {
+            this.showUsernameModal();
+        }
+        
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.holdCanvas = document.getElementById('holdCanvas');
@@ -25,6 +33,9 @@ class Tetris {
         this.level = 1;
         this.gameOver = false;
         this.paused = false;
+        this.gameStartTime = Date.now();
+        this.totalPauseTime = 0;
+        this.lastPauseTime = 0;
         this.highScore = localStorage.getItem('tetrisHighScore') || 0;
         
         // Tetromino colors
@@ -63,6 +74,112 @@ class Tetris {
         this.dropCounter = 0;
         this.dropInterval = 1000;
         this.gameLoop();
+    }
+    
+    async initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('TetrisDB', 1);
+            
+            request.onerror = () => reject(request.error);
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('scores')) {
+                    const store = db.createObjectStore('scores', { keyPath: 'id', autoIncrement: true });
+                    store.createIndex('score', 'score');
+                    store.createIndex('datetime', 'datetime');
+                }
+            };
+            
+            request.onsuccess = () => {
+                this.db = request.result;
+                this.loadTopScores();
+                resolve();
+            };
+        });
+    }
+
+    async saveScore() {
+        if (!this.db) return;
+        
+        const username = localStorage.getItem('tetrisUsername') || 'Player';
+        const gameTime = Date.now() - this.gameStartTime - this.totalPauseTime;
+        const score = {
+            username,
+            score: this.score,
+            time: gameTime,
+            datetime: new Date().toISOString(),
+        };
+
+        const transaction = this.db.transaction(['scores'], 'readwrite');
+        const store = transaction.objectStore('scores');
+        await store.add(score);
+        
+        this.loadTopScores();
+    }
+
+    async loadTopScores() {
+        if (!this.db) return;
+        
+        const transaction = this.db.transaction(['scores'], 'readonly');
+        const store = transaction.objectStore('scores');
+        const scoreIndex = store.index('score');
+        
+        const request = scoreIndex.openCursor(null, 'prev');
+        const scores = [];
+        
+        request.onsuccess = (event) => {
+            const cursor = event.target.result;
+            if (cursor && scores.length < 10) {
+                scores.push(cursor.value);
+                cursor.continue();
+            } else {
+                this.updateScoreboardDisplay(scores);
+            }
+        };
+    }
+
+    updateScoreboardDisplay(scores) {
+        const scoreboard = document.querySelector('.scoreboard');
+        if (!scoreboard) return;
+        
+        scoreboard.innerHTML = '<h3>Top Scores</h3>';
+        const table = document.createElement('table');
+        table.innerHTML = `
+            <tr>
+                <th>Rank</th>
+                <th>Player</th>
+                <th>Score</th>
+                <th>Time</th>
+                <th>Datetime</th>
+            </tr>
+        `;
+        
+        scores.forEach((score, index) => {
+            let timeStr = '--:--';
+            if (score.time) {
+                const minutes = Math.floor(score.time / 60000);
+                const seconds = Math.floor((score.time % 60000) / 1000);
+                timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            const datetime = new Date(score.datetime);
+            const dateStr = datetime.toLocaleDateString();
+            const timeOfDay = datetime.toLocaleTimeString();
+            const datetimeStr = `${dateStr} ${timeOfDay}`;
+            
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${score.username}</td>
+                <td>${score.score.toLocaleString()}</td>
+                <td>${timeStr}</td>
+                <td>${datetimeStr}</td>
+            `;
+            table.appendChild(row);
+        });
+        
+        scoreboard.appendChild(table);
     }
     
     generatePiece() {
@@ -142,6 +259,16 @@ class Tetris {
         document.querySelector('.score').textContent = this.score.toLocaleString();
         document.querySelector('.lines').textContent = `Lines: ${this.lines}`;
         document.querySelector('.level').textContent = `Level: ${this.level}`;
+        
+        // Update time
+        if (!this.gameOver && !this.paused) {
+            const currentTime = Date.now();
+            const gameTime = currentTime - this.gameStartTime - this.totalPauseTime;
+            const seconds = Math.floor(gameTime / 1000) % 60;
+            const minutes = Math.floor(gameTime / 60000);
+            document.querySelector('.time').textContent = 
+                `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
     }
     
     draw() {
@@ -373,8 +500,10 @@ class Tetris {
         
         if (this.paused) {
             pauseIcon.textContent = '▶';
+            this.lastPauseTime = Date.now();
         } else {
             pauseIcon.textContent = '⏸';
+            this.totalPauseTime += Date.now() - this.lastPauseTime;
             this.lastTime = performance.now();
             this.gameLoop();
         }
@@ -397,12 +526,22 @@ class Tetris {
         this.nextPiece = this.generatePiece();
         this.holdPiece = null;
         this.canHold = true;
+        this.gameStartTime = Date.now();
+        this.totalPauseTime = 0;
+        this.lastPauseTime = 0;
         this.updateScore();
+        this.scoreSubmitted = false;
         this.gameLoop();
     }
     
     gameLoop(currentTime = 0) {
-        if (this.paused || this.gameOver) return;
+        if (this.paused || this.gameOver) {
+            if (this.gameOver && !this.scoreSubmitted) {
+                this.saveScore();
+                this.scoreSubmitted = true;
+            }
+            return;
+        }
         
         const deltaTime = currentTime - this.lastTime;
         this.lastTime = currentTime;
@@ -428,6 +567,31 @@ class Tetris {
         
         this.draw();
         requestAnimationFrame(this.gameLoop.bind(this));
+    }
+
+    showUsernameModal() {
+        const modal = document.getElementById('usernameModal');
+        const input = document.getElementById('usernameInput');
+        const saveButton = document.getElementById('saveUsername');
+        
+        modal.classList.add('show');
+        input.focus();
+        
+        const saveUsername = () => {
+            const username = input.value.trim() || 'Player';
+            localStorage.setItem('tetrisUsername', username);
+            modal.classList.remove('show');
+            this.paused = false;
+            this.gameLoop();
+        };
+        
+        saveButton.onclick = saveUsername;
+        input.onkeypress = (e) => {
+            if (e.key === 'Enter') saveUsername();
+        };
+        
+        // Pause game while entering username
+        this.paused = true;
     }
 }
 
