@@ -29,13 +29,13 @@ class Tetris {
         
         // Tetromino colors
         this.colors = {
-            'I': '#00f0f0',
-            'O': '#f0f000',
-            'T': '#a000f0',
-            'S': '#00f000',
-            'Z': '#f00000',
-            'J': '#0000f0',
-            'L': '#f0a000'
+            'I': '#4AAFDB', // Light blue
+            'O': '#E8C547', // Muted yellow
+            'T': '#9B5DE5', // Soft purple
+            'S': '#45BF55', // Soft green
+            'Z': '#F15B5B', // Soft red
+            'J': '#4A69BD', // Navy blue
+            'L': '#E67E22'  // Soft orange
         };
         
         // Define tetromino shapes
@@ -150,6 +150,20 @@ class Tetris {
         this.holdCtx.clearRect(0, 0, this.holdCanvas.width, this.holdCanvas.height);
         this.nextCtx.clearRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
         
+        // Draw background grid
+        for (let x = 0; x < this.cols; x++) {
+            for (let y = 0; y < this.rows; y++) {
+                // Draw alternating column backgrounds
+                if (x % 2 === 1) {
+                    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+                    this.ctx.fillRect(x * this.blockSize, y * this.blockSize, this.blockSize, this.blockSize);
+                }
+                // Draw grid borders
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
+                this.ctx.strokeRect(x * this.blockSize, y * this.blockSize, this.blockSize, this.blockSize);
+            }
+        }
+        
         // Draw grid
         this.grid.forEach((row, y) => {
             row.forEach((color, x) => {
@@ -202,12 +216,29 @@ class Tetris {
     }
     
     drawBlock(ctx, x, y, color) {
-        ctx.fillStyle = color;
-        ctx.fillRect(x * this.blockSize, y * this.blockSize, this.blockSize - 1, this.blockSize - 1);
+        const blockX = x * this.blockSize;
+        const blockY = y * this.blockSize;
+        const size = this.blockSize - 1;
         
-        // Add shine effect
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-        ctx.fillRect(x * this.blockSize, y * this.blockSize, this.blockSize - 1, this.blockSize / 2);
+        // Main block color
+        ctx.fillStyle = color;
+        ctx.fillRect(blockX, blockY, size, size);
+        
+        // Light effect (top and left edges)
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.beginPath();
+        ctx.moveTo(blockX, blockY + size);
+        ctx.lineTo(blockX, blockY);
+        ctx.lineTo(blockX + size, blockY);
+        ctx.fill();
+        
+        // Shadow effect (bottom and right edges)
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+        ctx.beginPath();
+        ctx.moveTo(blockX + size, blockY);
+        ctx.lineTo(blockX + size, blockY + size);
+        ctx.lineTo(blockX, blockY + size);
+        ctx.fill();
     }
     
     drawPieceInCanvas(ctx, piece, canvas) {
@@ -219,12 +250,28 @@ class Tetris {
         piece.shape.forEach((row, y) => {
             row.forEach((value, x) => {
                 if (value) {
-                    ctx.fillStyle = piece.color;
-                    ctx.fillRect(offsetX + x * size, offsetY + y * size, size - 1, size - 1);
+                    const blockX = offsetX + x * size;
+                    const blockY = offsetY + y * size;
                     
-                    // Add shine effect
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-                    ctx.fillRect(offsetX + x * size, offsetY + y * size, size - 1, size / 2);
+                    // Main block color
+                    ctx.fillStyle = piece.color;
+                    ctx.fillRect(blockX, blockY, size - 1, size - 1);
+                    
+                    // Light effect
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                    ctx.beginPath();
+                    ctx.moveTo(blockX, blockY + size - 1);
+                    ctx.lineTo(blockX, blockY);
+                    ctx.lineTo(blockX + size - 1, blockY);
+                    ctx.fill();
+                    
+                    // Shadow effect
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+                    ctx.beginPath();
+                    ctx.moveTo(blockX + size - 1, blockY);
+                    ctx.lineTo(blockX + size - 1, blockY + size - 1);
+                    ctx.lineTo(blockX, blockY + size - 1);
+                    ctx.fill();
                 }
             });
         });
