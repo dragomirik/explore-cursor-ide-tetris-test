@@ -139,16 +139,9 @@ class Tetris {
     }
     
     updateScore() {
-        if (this.score > this.highScore) {
-            this.highScore = this.score;
-            localStorage.setItem('tetrisHighScore', this.score);
-            document.querySelector('.score-label').textContent = 'NEW BEST!';
-        } else {
-            document.querySelector('.score-label').textContent = 'SCORE';
-        }
         document.querySelector('.score').textContent = this.score.toLocaleString();
-        document.querySelector('.lines').textContent = `Lines ${this.lines}`;
-        document.querySelector('.level').textContent = `Level ${this.level}`;
+        document.querySelector('.lines').textContent = `Lines: ${this.lines}`;
+        document.querySelector('.level').textContent = `Level: ${this.level}`;
     }
     
     draw() {

@@ -32,33 +32,17 @@ body {
     padding: 15px 30px;
     border-radius: 15px;
     backdrop-filter: blur(5px);
-    margin-bottom: 10px;
-}
-
-.score-label {
-    color: #ffd700;
-    font-size: 0.9em;
-    font-weight: 600;
-    letter-spacing: 1px;
-    margin-bottom: 5px;
-    text-transform: uppercase;
+    text-align: center;
 }
 
 .score {
-    font-size: 2.5em;
+    font-size: 2em;
     font-weight: bold;
     color: #fff;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-    margin: 5px 0;
+    margin-bottom: 5px;
 }
 
-.lines {
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 0.9em;
-    margin-top: 5px;
-}
-
-.level {
+.lines, .level {
     color: rgba(255, 255, 255, 0.7);
     font-size: 0.9em;
     margin-top: 5px;
