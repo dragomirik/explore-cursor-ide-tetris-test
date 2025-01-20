@@ -100,8 +100,6 @@ class Tetris {
     }
 
     async saveScore() {
-        if (!this.db) return;
-        
         const username = localStorage.getItem('tetrisUsername') || 'Player';
         const gameTime = Date.now() - this.gameStartTime - this.totalPauseTime;
         const score = {
@@ -111,32 +109,69 @@ class Tetris {
             datetime: new Date().toISOString(),
         };
 
-        const transaction = this.db.transaction(['scores'], 'readwrite');
-        const store = transaction.objectStore('scores');
-        await store.add(score);
+        // Save to IndexedDB
+        if (this.db) {
+            const transaction = this.db.transaction(['scores'], 'readwrite');
+            const store = transaction.objectStore('scores');
+            await store.add(score);
+        }
+
+        // Save to MongoDB
+        try {
+            const response = await fetch('/api/scores', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(score)
+            });
+            
+            if (!response.ok) {
+                console.error('Failed to save score to server');
+            }
+        } catch (err) {
+            console.error('Error saving score to server:', err);
+        }
         
         this.loadTopScores();
     }
 
     async loadTopScores() {
-        if (!this.db) return;
+        let scores = [];
         
-        const transaction = this.db.transaction(['scores'], 'readonly');
-        const store = transaction.objectStore('scores');
-        const scoreIndex = store.index('score');
-        
-        const request = scoreIndex.openCursor(null, 'prev');
-        const scores = [];
-        
-        request.onsuccess = (event) => {
-            const cursor = event.target.result;
-            if (cursor && scores.length < 10) {
-                scores.push(cursor.value);
-                cursor.continue();
+        // Try to load from MongoDB first
+        try {
+            const response = await fetch('/api/scores');
+            if (response.ok) {
+                scores = await response.json();
             } else {
-                this.updateScoreboardDisplay(scores);
+                console.error('Failed to fetch scores from server');
             }
-        };
+        } catch (err) {
+            console.error('Error fetching scores from server:', err);
+            
+            // Fallback to IndexedDB if server is unavailable
+            if (this.db) {
+                const transaction = this.db.transaction(['scores'], 'readonly');
+                const store = transaction.objectStore('scores');
+                const scoreIndex = store.index('score');
+                
+                const request = scoreIndex.openCursor(null, 'prev');
+                
+                request.onsuccess = (event) => {
+                    const cursor = event.target.result;
+                    if (cursor && scores.length < 10) {
+                        scores.push(cursor.value);
+                        cursor.continue();
+                    } else {
+                        this.updateScoreboardDisplay(scores);
+                    }
+                };
+                return;
+            }
+        }
+        
+        this.updateScoreboardDisplay(scores);
     }
 
     updateScoreboardDisplay(scores) {

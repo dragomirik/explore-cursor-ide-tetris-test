@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3001"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/tetris
+    depends_on:
+      - mongodb
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data: 
