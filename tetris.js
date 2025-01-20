@@ -126,14 +126,17 @@ class Tetris {
                 body: JSON.stringify(score)
             });
             
-            if (!response.ok) {
+            if (response.ok) {
+                const result = await response.json();
+                this.updateScoreboardDisplay(result.topScores);
+            } else {
                 console.error('Failed to save score to server');
+                this.loadTopScores(); // Fallback to loading scores
             }
         } catch (err) {
             console.error('Error saving score to server:', err);
+            this.loadTopScores(); // Fallback to loading scores
         }
-        
-        this.loadTopScores();
     }
 
     async loadTopScores() {
@@ -156,18 +159,21 @@ class Tetris {
                 const store = transaction.objectStore('scores');
                 const scoreIndex = store.index('score');
                 
-                const request = scoreIndex.openCursor(null, 'prev');
-                
-                request.onsuccess = (event) => {
-                    const cursor = event.target.result;
-                    if (cursor && scores.length < 10) {
-                        scores.push(cursor.value);
-                        cursor.continue();
-                    } else {
-                        this.updateScoreboardDisplay(scores);
-                    }
-                };
-                return;
+                return new Promise((resolve) => {
+                    const request = scoreIndex.openCursor(null, 'prev');
+                    const localScores = [];
+                    
+                    request.onsuccess = (event) => {
+                        const cursor = event.target.result;
+                        if (cursor && localScores.length < 10) {
+                            localScores.push(cursor.value);
+                            cursor.continue();
+                        } else {
+                            this.updateScoreboardDisplay(localScores);
+                            resolve();
+                        }
+                    };
+                });
             }
         }
         

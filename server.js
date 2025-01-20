@@ -26,10 +26,12 @@ mongoose.connect(MONGODB_URI, {
 
 // Score Schema
 const scoreSchema = new mongoose.Schema({
-    username: String,
-    score: Number,
-    time: Number,
+    username: { type: String, required: true },
+    score: { type: Number, required: true },
+    time: { type: Number, required: true },
     datetime: { type: Date, default: Date.now }
+}, {
+    timestamps: true // Adds createdAt and updatedAt fields
 });
 
 const Score = mongoose.model('Score', scoreSchema);
@@ -43,7 +45,7 @@ app.get('/', (req, res) => {
 app.get('/api/scores', async (req, res) => {
     try {
         const scores = await Score.find()
-            .sort({ score: -1 })
+            .sort({ score: -1, datetime: -1 }) // Sort by score desc, then by date desc
             .limit(10)
             .exec();
         res.json(scores);
@@ -52,13 +54,42 @@ app.get('/api/scores', async (req, res) => {
     }
 });
 
+// Get player's best score
+app.get('/api/scores/:username/best', async (req, res) => {
+    try {
+        const score = await Score.findOne({ username: req.params.username })
+            .sort({ score: -1 })
+            .exec();
+        res.json(score);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch best score' });
+    }
+});
+
 // Save new score
 app.post('/api/scores', async (req, res) => {
     try {
-        const score = new Score(req.body);
-        await score.save();
-        res.status(201).json(score);
+        const newScore = new Score({
+            username: req.body.username,
+            score: req.body.score,
+            time: req.body.time,
+            datetime: req.body.datetime || new Date()
+        });
+        
+        await newScore.save();
+        
+        // Get updated top scores
+        const topScores = await Score.find()
+            .sort({ score: -1, datetime: -1 })
+            .limit(10)
+            .exec();
+            
+        res.status(201).json({
+            savedScore: newScore,
+            topScores: topScores
+        });
     } catch (err) {
+        console.error('Error saving score:', err);
         res.status(500).json({ error: 'Failed to save score' });
     }
 });
